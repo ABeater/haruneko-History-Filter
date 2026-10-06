@@ -29,12 +29,17 @@ export class FrontendFixture extends PuppeteerFixture {
                 reject(error);
             }
         }));
+        const isFrontendChanged = await page.evaluate(id => HakuNeko.SettingsManager.OpenScope('*').Get('frontend').Value !== id, frontend);
         const dismiss = async (dialog: Dialog) => dialog.dismiss();
         page.once('dialog', dismiss);
         try {
             await this.UpdateSetting('*', 'frontend', frontend);
         } finally {
             page.off('dialog', dismiss);
+        }
+        // A changed setting is stored in the background, reloading before it was stored would start the previous frontend
+        if(isFrontendChanged) {
+            await this.WaitForStoredSetting('*', 'frontend', frontend);
         }
         await page.reload();
         await this.Delay(500);
@@ -53,6 +58,31 @@ export class FrontendFixture extends PuppeteerFixture {
         await page.evaluate((scope, key, value) => {
             HakuNeko.SettingsManager.OpenScope(scope).Get(key).Value = value;
         }, scope, key, value);
+    }
+
+    /**
+     * Wait until the given {@link value} of a setting was written to the persistent storage (IndexedDB) of the HakuNeko app.
+     */
+    public async WaitForStoredSetting(scope: string, key: string, value: IValue, timeout = 5000): Promise<void> {
+        const page = await super.GetPage();
+        await page.waitForFunction((scope: string, key: string, expected: string) => new Promise<boolean>(resolve => {
+            const request = indexedDB.open('HakuNeko');
+            // Do not create the database when it does not exist (yet), this is up to the app
+            request.onupgradeneeded = () => request.transaction.abort();
+            request.onerror = () => resolve(false);
+            request.onsuccess = () => {
+                const db = request.result;
+                try {
+                    const query = db.transaction('Settings', 'readonly').objectStore('Settings').get(scope);
+                    query.onsuccess = () => resolve(JSON.stringify(query.result?.[key]) === expected);
+                    query.onerror = () => resolve(false);
+                } catch {
+                    resolve(false);
+                } finally {
+                    db.close();
+                }
+            };
+        }), { timeout, polling: 100 }, scope, key, JSON.stringify(value));
     }
 
     /**

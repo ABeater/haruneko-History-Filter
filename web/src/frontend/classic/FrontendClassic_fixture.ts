@@ -55,8 +55,9 @@ export class TestFixture extends FrontendFixture {
         const selector = '#Plugin button#MediaUpdateButton';
         const page = await super.GetPage();
         await page.click(selector);
-        return super.Delay(timeout - timeout + 250);
-        // TODO: Wait for spinner to dissapear in list?
+        // Wait until the update has finished, otherwise the list may be re-rendered while it is used
+        await page.waitForSelector('#MediaList .loading', { timeout: 1000 }).catch(() => {});
+        await page.waitForSelector('#MediaList .loading', { hidden: true, timeout });
     }
 
     /**
