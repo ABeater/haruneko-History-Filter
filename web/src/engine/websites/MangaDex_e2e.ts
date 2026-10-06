@@ -12,7 +12,8 @@ new TestFixture({
     },
     child: {
         id: '5871af5e-4cb2-4dc1-ae7e-89124823a031',
-        title: 'Vol.01 Ch.0005.5 - Extra (en) [Madam el LePoo Scanlations]'
+        title: 'Vol.01 Ch.0005.5 - Extra (en) [Madam el LePoo Scanlations]',
+        groups: [ 'Madam el LePoo Scanlations' ]
     },
     entry: {
         index: 0,

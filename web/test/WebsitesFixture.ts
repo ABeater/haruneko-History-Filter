@@ -20,6 +20,8 @@ export type Config = {
     child?: {
         id: string;
         title: string;
+        /** The expected groups (translator, scanlation group, ...) of the chapter, not verified when omitted */
+        groups?: string[];
         timeout?: number;
     };
     entry?: {
@@ -120,6 +122,9 @@ export class TestFixture<TWebsitePlugin extends MediaContainer<MediaChild>, TCon
                 remoteChild = await this.GetRemoteChild(remoteContainer, this.config.child.id);
                 expect(await remoteChild.evaluate(child => child?.Identifier || 'Chapter not found!')).toEqual(this.config.child.id);
                 expect(await remoteChild.evaluate(child => child.Title)).toEqual(this.config.child.title);
+                if(this.config.child.groups) {
+                    expect(await remoteChild.evaluate(child => child.Groups)).toEqual(this.config.child.groups);
+                }
             });
 
             let remoteEntry: JSHandle<TEntry>;
