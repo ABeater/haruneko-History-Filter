@@ -192,6 +192,8 @@ const translations: VariantResource = {
   Settings_Global_MediaDirectory_PermissionError: 'Insufficient permission to acces the download directory!',
   Settings_Global_WebsiteSubDirectory: 'Use Sub-Directories',
   Settings_Global_WebsiteSubDirectoryInfo: 'Set wether HakuNeko shall store media directly in the directory, or use sub-directories per website',
+  Settings_Global_MediaDirectoryPath: 'Media Directory Location',
+  Settings_Global_MediaDirectoryPathInfo: 'The full path of the media directory on this computer. It is only used to open download folders in the file manager of your system and is filled in automatically when you locate the folder.',
   Settings_Global_MangaExportFormat: 'Manga/Comic Download Format',
   Settings_Global_MangaExportFormatInfo: 'The container format to store the downloaded content for mangas/comics',
   Settings_Global_MangaExportFormat_FolderWithImages: 'Folder with Images',
@@ -247,6 +249,10 @@ const translations: VariantResource = {
   BookmarkPlugin_ConvertToSerializedBookmark_UnsupportedFormatError: 'The provided data seems to be invalid/corrupted and could not be successfully de-serialized to a bookmark!',
   DownloadHistory_Import_UnsupportedFormatError: 'The selected file is not a HakuNeko download history export!',
   DownloadHistory_Import_NewerVersionError: 'The download history was exported by a newer version of HakuNeko (format version {0}). This version supports up to format version {1}.',
+  MediaDirectoryExplorer_UnsupportedPlatformError: 'Opening folders in the file manager is not supported on this platform!',
+  MediaDirectoryExplorer_LocateDialogTitle: 'Locate the media directory \'{0}\' on this computer',
+  MediaDirectoryExplorer_LocationMismatchError: 'The selected folder does not match the media directory \'{0}\' configured in the HakuNeko settings!',
+  MediaDirectoryExplorer_NotFoundError: 'The media directory \'{0}\' could not be found, the drive may be disconnected!',
 
   // [SECTION]: Tags
 

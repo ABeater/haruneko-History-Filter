@@ -15,6 +15,16 @@ export namespace Channels {
     };
 
     /**
+     * Supported IPC Channels for interacting with the file manager of the operating system.
+     */
+    export enum FileExplorer {
+        GetDirectoryHints = 'FileExplorer::GetDirectoryHints',
+        PickDirectory = 'FileExplorer::PickDirectory',
+        VerifyDirectory = 'FileExplorer::VerifyDirectory',
+        Reveal = 'FileExplorer::Reveal',
+    };
+
+    /**
      * Supported IPC Channels for managing the blocked requests.
      */
     export enum BloatGuard {

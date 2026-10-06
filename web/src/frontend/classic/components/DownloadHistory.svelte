@@ -24,6 +24,7 @@
     import { Key as GlobalKey } from '../../../engine/SettingsGlobal';
     import type { Directory } from '../../../engine/SettingsManager';
     import { Store as UI } from '../stores/Stores.svelte';
+    import { CanOpenFolders, OpenFolder } from '../lib/folders';
     import { AllWebsites, CountEntries, FilterHistory, ListHistoryWebsites, type HistoryGroup, type HistoryWebsite } from '../lib/HistoryFilter';
 
     interface Props {
@@ -31,6 +32,7 @@
     };
     let { isModalOpen = $bindable(false) }: Props = $props();
 
+    const canOpenFolders = CanOpenFolders();
     const pageSize = 100;
 
     let statistics: HistoryStatistics = $state(HakuNeko.DownloadHistory.GetStatistics());
@@ -295,6 +297,16 @@
                     disabled={!view.WebsiteAvailable}
                     onclick={() => goToMedia(view)}
                 />
+                {#if canOpenFolders}
+                    <Button
+                        size="small"
+                        kind="ghost"
+                        icon={FolderOpen}
+                        iconDescription="Open manga folder"
+                        tooltipPosition="left"
+                        onclick={() => OpenFolder(view.Folder)}
+                    />
+                {/if}
             </div>
             {#if open}
                 <ul class="entries">
@@ -305,6 +317,16 @@
                             </span>
                             <span class="entry-title" title={entry.Title}>{entry.Title}</span>
                             <span class="details">{describeEntry(entry)}</span>
+                            {#if canOpenFolders}
+                                <Button
+                                    size="small"
+                                    kind="ghost"
+                                    icon={FolderOpen}
+                                    iconDescription="Open chapter folder"
+                                    tooltipPosition="left"
+                                    onclick={() => OpenFolder(entry.Folder)}
+                                />
+                            {/if}
                         </li>
                     {/each}
                 </ul>

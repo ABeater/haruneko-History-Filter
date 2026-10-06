@@ -287,6 +287,8 @@ export enum EngineResourceKey {
     Settings_Global_MediaDirectory_PermissionError = 'Settings_Global_MediaDirectory_PermissionError',
     Settings_Global_WebsiteSubDirectory = 'Settings_Global_WebsiteSubDirectory',
     Settings_Global_WebsiteSubDirectoryInfo = 'Settings_Global_WebsiteSubDirectoryInfo',
+    Settings_Global_MediaDirectoryPath = 'Settings_Global_MediaDirectoryPath',
+    Settings_Global_MediaDirectoryPathInfo = 'Settings_Global_MediaDirectoryPathInfo',
     Settings_Global_MangaExportFormat = 'Settings_Global_MangaExportFormat',
     Settings_Global_MangaExportFormatInfo = 'Settings_Global_MangaExportFormatInfo',
     Settings_Global_MangaExportFormat_FolderWithImages = 'Settings_Global_MangaExportFormat_FolderWithImages',
@@ -343,6 +345,10 @@ export enum EngineResourceKey {
 
     DownloadHistory_Import_UnsupportedFormatError = 'DownloadHistory_Import_UnsupportedFormatError',
     DownloadHistory_Import_NewerVersionError = 'DownloadHistory_Import_NewerVersionError',
+    MediaDirectoryExplorer_UnsupportedPlatformError = 'MediaDirectoryExplorer_UnsupportedPlatformError',
+    MediaDirectoryExplorer_LocateDialogTitle = 'MediaDirectoryExplorer_LocateDialogTitle',
+    MediaDirectoryExplorer_LocationMismatchError = 'MediaDirectoryExplorer_LocationMismatchError',
+    MediaDirectoryExplorer_NotFoundError = 'MediaDirectoryExplorer_NotFoundError',
 }
 
 // [SECTION]: Tracker Kitsu

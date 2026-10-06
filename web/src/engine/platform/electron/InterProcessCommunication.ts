@@ -45,6 +45,11 @@ class IPC {
     Invoke(channel: Channels.ApplicationWindow.CloseSplash): void;
     // BloatGuard
     Invoke(channel: Channels.BloatGuard.Initialize, patterns: string[]): Promise<void>;
+    // FileExplorer
+    Invoke(channel: Channels.FileExplorer.GetDirectoryHints): Promise<string[]>;
+    Invoke(channel: Channels.FileExplorer.PickDirectory, title: string): Promise<string | null>;
+    Invoke(channel: Channels.FileExplorer.VerifyDirectory, directory: string, name: string, entries: string[]): Promise<boolean>;
+    Invoke(channel: Channels.FileExplorer.Reveal, root: string, segments: string[]): Promise<string | null>;
     // FetchProvider
     Invoke(channel: Channels.FetchProvider.Initialize, fetchApiSupportedPrefix: string): Promise<void>;
     Invoke(channel: Channels.FetchProvider.GetSessionCookies, filter: Electron.CookiesGetFilter): Promise<CookieList>;

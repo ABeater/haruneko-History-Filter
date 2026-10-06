@@ -35,7 +35,9 @@
     import { resizeBar } from '../lib/actions';
     import { Key as GlobalKey } from '../../../engine/SettingsGlobal';
     import type { Directory } from '../../../engine/SettingsManager';
+    import { CanOpenFolders, OpenEntryFolder } from '../lib/folders';
     import { FilterItems, ListItemGroups, type ItemGroup } from '../lib/ItemFilter';
+    const canOpenFolders = CanOpenFolders();
 
     let items: MediaContainer<MediaItem>[] = $state([]);
     let filteredItems: MediaContainer<MediaItem>[] = $state([]);
@@ -338,6 +340,12 @@
                     UI.selectedItem = contextItem;
                 }}
             />
+            {#if canOpenFolders}
+                <ContextMenuOption
+                    labelText="Open Chapter Folder"
+                    onclick={() => OpenEntryFolder(contextItem)}
+                />
+            {/if}
             <ContextMenuOption labelText="Flag as">
                 <ContextMenuOption
                     labelText="Not viewed"

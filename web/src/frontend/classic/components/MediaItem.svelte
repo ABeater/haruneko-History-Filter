@@ -42,6 +42,7 @@
     import type { Directory } from '../../../engine/SettingsManager';
     import { GlobalSettings } from '../stores/Settings.svelte';
     import { Presence, type DownloadHistoryEntryState, type HistoryChangedEvent } from '../../../engine/DownloadHistory';
+    import { CanOpenFolders, OpenEntryFolder } from '../lib/folders';
     import { GetGroupsNotInTitle } from '../lib/ItemFilter';
     
     import { Tags, type Tag } from '../../../engine/Tags';
@@ -112,6 +113,7 @@
     let wasDownloaded = $derived(history.Downloaded || downloadTaskStatus === Status.Completed);
     let isMissing = $derived(history.Downloaded && history.Presence === Presence.Missing);
     let isPresent = $derived(!isMissing && (history.Presence === Presence.Present || downloadTaskStatus === Status.Completed));
+    const canOpenFolders = CanOpenFolders();
 
     function refreshHistory() {
         history = HakuNeko.DownloadHistory.GetEntryState(item);
@@ -122,6 +124,12 @@
         }
     }
     HakuNeko.DownloadHistory.Changed.Subscribe(onHistoryChanged);
+
+    async function openFolder() {
+        if(canOpenFolders) {
+            await OpenEntryFolder(item);
+        }
+    }
 
     /**
      * Download a chapter again whose files are missing, using the existing download task (retry) if available.
@@ -155,7 +163,6 @@
         await window.HakuNeko.DownloadManager.Dequeue(task)
     }
 
-    // TODO: download complete button should open file explorer
 </script>
 
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -189,7 +196,8 @@
                 kind="ghost"
                 tooltipPosition="right"
                 tooltipAlignment="end"
-                iconDescription="Downloaded"
+                iconDescription={canOpenFolders ? 'Downloaded: click to open the folder' : 'Downloaded'}
+                onclick={openFolder}
             >
                 <FolderOpen class="history-present" fill="var(--cds-support-success)" />
             </Button>
@@ -200,6 +208,7 @@
                 tooltipPosition="right"
                 tooltipAlignment="end"
                 iconDescription="Downloaded before (files not yet verified on disk)"
+                onclick={openFolder}
             >
                 <FolderOpen class="history-unverified" fill="var(--cds-icon-secondary)" />
             </Button>

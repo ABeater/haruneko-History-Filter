@@ -19,6 +19,8 @@
     import { Bookmark } from '../../../engine/providers/Bookmark';
     import { onDestroy, onMount } from 'svelte';
     import type { MediaContainer2 } from '../Types';
+    import { CanOpenFolders, OpenMediaFolder } from '../lib/folders';
+    const canOpenFolders = CanOpenFolders();
 
     interface Props {
         style?: string;
@@ -97,6 +99,13 @@
             shortcutText="⌘F"
             onclick={toggleBookmark}
         />
+        {#if canOpenFolders && !isMediaOrphanedBookmark}
+            <ContextMenuOption
+                indented
+                labelText="Open Manga Folder"
+                onclick={() => OpenMediaFolder(media as MediaContainer<MediaChild>)}
+            />
+        {/if}
     </ContextMenu>
     {#if isMediaOrphanedBookmark}
         <span in:coinflip={{ duration: 200 }}>

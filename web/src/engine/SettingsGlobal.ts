@@ -10,6 +10,7 @@ export const enum Key {
     Frontend = 'frontend',
     Language = 'language',
     MediaDirectory = 'media-directory',
+    MediaDirectoryPath = 'media-directory-path',
     UseWebsiteSubDirectory = 'website-subdirectory',
     MangaExportFormat = 'manga-export-format',
     DescramblingFormat = 'descrambling-format',
@@ -51,6 +52,12 @@ export async function Initialize(settingsManager: SettingsManager, frontends: IF
             R.Settings_Global_MediaDirectory,
             R.Settings_Global_MediaDirectoryInfo,
             null
+        ),
+        new Text(
+            Key.MediaDirectoryPath,
+            R.Settings_Global_MediaDirectoryPath,
+            R.Settings_Global_MediaDirectoryPathInfo,
+            ''
         ),
         new Check(
             Key.UseWebsiteSubDirectory,

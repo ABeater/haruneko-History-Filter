@@ -8,6 +8,7 @@ import { ApplicationWindow } from './ipc/ApplicationWindow';
 import { FetchProvider } from './ipc/FetchProvider';
 import { InitializeMenu } from './Menu';
 import { BloatGuard } from './ipc/BloatGuard';
+import { FileExplorer, RememberDirectoryHint } from './ipc/FileExplorer';
 import { RemoteBrowserWindowController } from './ipc/RemoteBrowserWindow';
 import { RPCServer } from '../../src/rpc/Server';
 import { RemoteProcedureCallManager } from './ipc/RemoteProcedureCallManager';
@@ -92,7 +93,15 @@ function CheckHostPermission(url: string, appURI: URL) {
 
 function UpdatePermissions(session: Electron.Session, appURI: URL) {
     session.setPermissionCheckHandler((webContents, permission, requestingOrigin) => CheckHostPermission(requestingOrigin, appURI));
-    session.setPermissionRequestHandler((webContents, permission, callback, details) => callback(CheckHostPermission(details.requestingUrl, appURI)));
+    session.setPermissionRequestHandler((webContents, permission, callback, details) => {
+        const granted = CheckHostPermission(details.requestingUrl, appURI);
+        // Remember the absolute path of a directory the web-app requested access to (e.g., the media directory),
+        // so it can be used to open folders in the system file manager (the web-app only knows a FileSystemDirectoryHandle)
+        if(granted && permission === 'fileSystem' && 'isDirectory' in details && details.isDirectory && details.filePath) {
+            RememberDirectoryHint(details.filePath);
+        }
+        callback(granted);
+    });
     // TODO: May remove the following workaround when https://github.com/electron/electron/issues/41957 is solved
     session.on('file-system-access-restricted', (event, details, callback) => callback(CheckHostPermission(details.origin, appURI) ? 'allow' : 'deny'));
 }
@@ -116,6 +125,7 @@ async function OpenWindow(): Promise<void> {
         new FetchProvider(ipc, win.webContents);
         new RemoteBrowserWindowController(ipc);
         new BloatGuard(ipc, win.webContents);
+        new FileExplorer(ipc, win);
         win.RegisterChannels(ipc);
         await win.loadURL(uri.href).catch(error => console.warn(error));
     } catch(error) {

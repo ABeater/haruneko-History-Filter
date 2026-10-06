@@ -10,6 +10,8 @@ import { FeatureFlags } from './FeatureFlags';
 import { DownloadManager } from './DownloadManager';
 import { DownloadHistory } from './DownloadHistory';
 import { DownloadHistoryStorage } from './DownloadHistoryStorage';
+import { MediaDirectoryExplorer } from './MediaDirectoryExplorer';
+import { CreateFileExplorer } from './platform/FileExplorer';
 import { CreateBloatGuard } from './platform/BloatGuard';
 import { SetupFetchProvider } from './platform/FetchProvider';
 import { CreateRemoteProcedureCallManager } from './platform/RemoteProcedureCallManager';
@@ -27,6 +29,7 @@ export class HakuNeko {
     readonly #itemflagManager: ItemflagManager;
     readonly #downloadManager: DownloadManager;
     readonly #downloadHistory: DownloadHistory;
+    readonly #mediaDirectoryExplorer: MediaDirectoryExplorer;
     readonly #pastedClipboardURL = new Observable<URL>(null);
 
     constructor() {
@@ -38,6 +41,7 @@ export class HakuNeko {
         this.#itemflagManager = new ItemflagManager(this.#storageController);
         this.#downloadManager = new DownloadManager(this.#storageController);
         this.#downloadHistory = new DownloadHistory(new DownloadHistoryStorage(), this.#settingsManager, this.#pluginController, this.#bookmarkPlugin, this.#downloadManager, new InteractiveFileContentProvider());
+        this.#mediaDirectoryExplorer = new MediaDirectoryExplorer(this.#settingsManager, CreateFileExplorer());
         SetupFetchProvider(this.#featureFlags);
     }
 
@@ -85,6 +89,10 @@ export class HakuNeko {
 
     public get DownloadHistory(): DownloadHistory {
         return this.#downloadHistory;
+    }
+
+    public get MediaDirectoryExplorer(): MediaDirectoryExplorer {
+        return this.#mediaDirectoryExplorer;
     }
 
     public get PastedClipboardURL(): Observable<URL> {
