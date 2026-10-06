@@ -340,6 +340,9 @@ export enum EngineResourceKey {
     FetchProvider_Fetch_Forbidden = 'FetchProvider_Fetch_Forbidden',
 
     BookmarkPlugin_ConvertToSerializedBookmark_UnsupportedFormatError = 'BookmarkPlugin_ConvertToSerializedBookmark_UnsupportedFormatError',
+
+    DownloadHistory_Import_UnsupportedFormatError = 'DownloadHistory_Import_UnsupportedFormatError',
+    DownloadHistory_Import_NewerVersionError = 'DownloadHistory_Import_NewerVersionError',
 }
 
 // [SECTION]: Tracker Kitsu

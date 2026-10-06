@@ -245,6 +245,8 @@ const translations: VariantResource = {
   FetchProvider_Fetch_Forbidden: 'The access to "{0}" was denied.\nMake sure the website is available and accessible (e.g., VPN to bypass region lock, manual login via website link).',
   //
   BookmarkPlugin_ConvertToSerializedBookmark_UnsupportedFormatError: 'The provided data seems to be invalid/corrupted and could not be successfully de-serialized to a bookmark!',
+  DownloadHistory_Import_UnsupportedFormatError: 'The selected file is not a HakuNeko download history export!',
+  DownloadHistory_Import_NewerVersionError: 'The download history was exported by a newer version of HakuNeko (format version {0}). This version supports up to format version {1}.',
 
   // [SECTION]: Tags
 

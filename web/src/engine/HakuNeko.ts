@@ -8,6 +8,8 @@ import { InteractiveFileContentProvider } from './InteractiveFileContentProvider
 import { SettingsManager, type Check } from './SettingsManager';
 import { FeatureFlags } from './FeatureFlags';
 import { DownloadManager } from './DownloadManager';
+import { DownloadHistory } from './DownloadHistory';
+import { DownloadHistoryStorage } from './DownloadHistoryStorage';
 import { CreateBloatGuard } from './platform/BloatGuard';
 import { SetupFetchProvider } from './platform/FetchProvider';
 import { CreateRemoteProcedureCallManager } from './platform/RemoteProcedureCallManager';
@@ -24,6 +26,7 @@ export class HakuNeko {
     readonly #bookmarkPlugin: BookmarkPlugin;
     readonly #itemflagManager: ItemflagManager;
     readonly #downloadManager: DownloadManager;
+    readonly #downloadHistory: DownloadHistory;
     readonly #pastedClipboardURL = new Observable<URL>(null);
 
     constructor() {
@@ -34,6 +37,7 @@ export class HakuNeko {
         this.#bookmarkPlugin = new BookmarkPlugin(this.#storageController, this.#pluginController, new InteractiveFileContentProvider());
         this.#itemflagManager = new ItemflagManager(this.#storageController);
         this.#downloadManager = new DownloadManager(this.#storageController);
+        this.#downloadHistory = new DownloadHistory(new DownloadHistoryStorage(), this.#settingsManager, this.#pluginController, this.#bookmarkPlugin, this.#downloadManager, new InteractiveFileContentProvider());
         SetupFetchProvider(this.#featureFlags);
     }
 
@@ -46,6 +50,8 @@ export class HakuNeko {
         // Preload bookmarks flags to show content to view
         const checkNewContent = this.SettingsManager.OpenScope().Get<Check>(GlobalKey.CheckNewContent).Value ;
         if (checkNewContent) this.BookmarkPlugin.RefreshAllFlags();
+        // NOTE: Do not await, the file system reconciliation runs in the background and must not delay the start-up
+        this.#downloadHistory.Initialize().catch(error => console.warn('Failed to initialize the download history!', error));
 
     }
 
@@ -75,6 +81,10 @@ export class HakuNeko {
 
     public get DownloadManager(): DownloadManager {
         return this.#downloadManager;
+    }
+
+    public get DownloadHistory(): DownloadHistory {
+        return this.#downloadHistory;
     }
 
     public get PastedClipboardURL(): Observable<URL> {

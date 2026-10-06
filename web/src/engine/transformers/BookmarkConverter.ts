@@ -40,6 +40,14 @@ export const legacyWebsiteIdentifierMap = new Map([
     [ 'visualikigai', 'ikigaimangas' ],
 ]);
 
+/**
+ * Map a website identifier that was renamed in the past to its current identifier.
+ * Identifiers which were never renamed are returned unchanged.
+ */
+export function MapLegacyWebsiteIdentifier(identifier: string): string {
+    return legacyWebsiteIdentifierMap.get(identifier) ?? identifier;
+}
+
 type BookmarkLegacy = {
     title: {
         connector: string;
@@ -89,7 +97,7 @@ export function ConvertToSerializedBookmark(data: unknown): BookmarkSerialized {
     };
 
     if (IsLegacyBookmarkFormat(data)) {
-        bookmark.Media.ProviderID = legacyWebsiteIdentifierMap.has(data.key.connector) ? legacyWebsiteIdentifierMap.get(data.key.connector) : data.key.connector;
+        bookmark.Media.ProviderID = MapLegacyWebsiteIdentifier(data.key.connector);
         bookmark.Media.EntryID = data.key.manga;
         bookmark.Title = data.title.manga;
         return bookmark;
