@@ -103,7 +103,7 @@ export default class extends DecoratableMangaScraper {
                 language && `(${language})`,
                 (scanlator || group) && `[${scanlator || group}]`,
             ].joinTitleSegments();
-            return new Chapter(this, manga, `./${source === 'user' ? 'uploads' : 'chapters'}/${id}/images`, title, ...chapterLanguageMap.get(language) ?? []);
+            return new Chapter(this, manga, `./${source === 'user' ? 'uploads' : 'chapters'}/${id}/images`, title, ...chapterLanguageMap.get(language) ?? []).WithGroups(scanlator || group);
         });
         const volumesData = await FetchJSON<APIVolumes>(new Request(new URL(`./manga/${manga.Identifier}/volumes`, this.apiURL)));
         const volumes = volumesData.map(({ id, volume_number: number }) => new Chapter(this, manga, `./uploads/${id}/images`, `Volume ${number}`));

@@ -120,7 +120,7 @@ export default class extends DecoratableMangaScraper {
         const chapters = await this.#drm.GetChaptersData(new URL(manga.Identifier, this.URI));
         return chapters.map(({ id, number, name, group }) => {
             const title = [number, name && `- ${name}`, group?.name && `[${group.name}]`].joinTitleSegments();
-            return new Chapter(this, manga, `${manga.Identifier}/${id}-chapter-${number}`, title);
+            return new Chapter(this, manga, `${manga.Identifier}/${id}-chapter-${number}`, title).WithGroups(group?.name);
         });
     }
 

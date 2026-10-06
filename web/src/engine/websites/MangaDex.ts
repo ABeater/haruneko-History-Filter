@@ -172,7 +172,7 @@ export default class extends MangaScraper {
                     groups.length > 0 ? `[${groups.map(group => group.attributes.name).join(', ')}]`: null,
                 ].joinTitleSegments();
                 const languageCode = entry.attributes.translatedLanguage?.split('-')?.shift();
-                return new Chapter(this, manga, entry.id, title.trim(), ...chapterLanguageMap.get(languageCode) ?? []);
+                return new Chapter(this, manga, entry.id, title.trim(), ...chapterLanguageMap.get(languageCode) ?? []).WithGroups(...groups.map(group => group.attributes.name));
             });
     }
 

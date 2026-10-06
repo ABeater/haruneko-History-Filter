@@ -7,13 +7,14 @@
         selected: boolean;
         hover: boolean;
         multilang ?: boolean;
+        multigroup ?: boolean;
         onView: (MouseEvent) => void;
         onmouseup: (MouseEvent) => void;
         onmousedown: (MouseEvent) => void;
         onmouseenter: (MouseEvent) => void;
         oncontextmenu: (MouseEvent) => void;
     };
-    let { item, selected, hover , multilang = false, onView, onmouseup, onmousedown, onmouseenter, oncontextmenu }: Props  = $props();
+    let { item, selected, hover , multilang = false, multigroup = false, onView, onmouseup, onmousedown, onmouseenter, oncontextmenu }: Props  = $props();
 
     import { Button, ClickableTile } from 'carbon-components-svelte';
     import BookmarkFilled from 'carbon-icons-svelte/lib/BookmarkFilled.svelte';
@@ -40,6 +41,7 @@
     import { Key as GlobalKey } from '../../../engine/SettingsGlobal';
     import type { Directory } from '../../../engine/SettingsManager';
     import { GlobalSettings } from '../stores/Settings.svelte';
+    import { GetGroupsNotInTitle } from '../lib/ItemFilter';
     
     import { Tags, type Tag } from '../../../engine/Tags';
     const availableLanguageTags = Tags.Language.toArray();
@@ -55,6 +57,10 @@
                 ?.slice(0, 4) ?? '🏴'
         );
     }
+
+    // Show the groups to distinguish releases with the same title, unless the website already added them to the title
+    let groupsNotInTitle = $derived(multigroup ? GetGroupsNotInTitle(item) : []);
+    let tooltip = $derived(item.Groups.length > 0 ? `${item.Title}\nGroup: ${item.Groups.join(', ')}` : item.Title);
 
     let flag: FlagType = $state();
     const flagiconmap = new Map<FlagType, any>([
@@ -232,7 +238,10 @@
                 {extractUnicodeFlagFromTags(item.Tags.Value)}
             </span>
         {/if}
-        <span title={item.Title}>{item.Title}</span>
+        <span class="itemtitle" title={tooltip}>{item.Title}</span>
+        {#if groupsNotInTitle.length > 0}
+            <span class="groups" title={tooltip}>{groupsNotInTitle.join(', ')}</span>
+        {/if}
     </ClickableTile>
 </div>
 
@@ -282,5 +291,18 @@
     .multilang {
         opacity: 0.7;
         margin-right: 0.4em;
+    }
+    .itemtitle {
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .groups {
+        flex-shrink: 0;
+        max-width: 50%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        opacity: 0.7;
+        font-style: italic;
+        margin-left: 0.6em;
     }
 </style>

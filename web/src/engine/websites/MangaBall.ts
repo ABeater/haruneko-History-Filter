@@ -86,7 +86,7 @@ export default class extends DecoratableMangaScraper {
             for (let page = 1, run = true; run; page++) {
                 const { grouped_data } = await FetchJSON<APIChapters>(new Request(new URL(`./title/chapter-listing?title_id=${manga.Identifier}&page=${page}&sort_order=desc&group_by=chapter_number&limit=200`, this.apiURL)));
                 const chapters = grouped_data.reduce((accumulator: Chapter[], entry) => {
-                    const currentChapters = entry.releases.map(({ id, lang, group_name: group }) => new Chapter(this, manga, id, [`Chapter ${entry.chapter_number} [${group}]`, `[${lang}]`].joinTitleSegments(), ...[chapterLanguageMap.get(lang)].filter(Boolean)));
+                    const currentChapters = entry.releases.map(({ id, lang, group_name: group }) => new Chapter(this, manga, id, [`Chapter ${entry.chapter_number} [${group}]`, `[${lang}]`].joinTitleSegments(), ...[chapterLanguageMap.get(lang)].filter(Boolean)).WithGroups(group));
                     accumulator.push(...currentChapters);
                     return accumulator;
                 }, []);

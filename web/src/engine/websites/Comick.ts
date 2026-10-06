@@ -45,7 +45,7 @@ export default class extends DecoratableMangaScraper {
                 const { data } = await FetchJSON<APIChapters>(new Request(new URL(`./comics/${manga.Identifier}/chapter-list?page=${page}`, this.apiURL)));
                 const chapters = data.map(({ chap, hid, title, lang, group_name: groups }) => {
                     title = ['Ch.', chap, title, `[${groups.join(' ').trim()}]`].joinTitleSegments();
-                    return new Chapter(this, manga, `/comic/${manga.Identifier}/${hid}-chapter-${chap}-${lang}`, title);
+                    return new Chapter(this, manga, `/comic/${manga.Identifier}/${hid}-chapter-${chap}-${lang}`, title).WithGroups(...groups);
                 });
                 chapters.length > 0 ? yield* chapters : run = false;
             }

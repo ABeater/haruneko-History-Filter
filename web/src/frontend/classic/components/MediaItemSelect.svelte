@@ -14,6 +14,7 @@
     } from 'carbon-components-svelte';
     import ChevronSort from 'carbon-icons-svelte/lib/ChevronSort.svelte';
     import EarthFilled from 'carbon-icons-svelte/lib/EarthFilled.svelte';
+    import UserMultiple from 'carbon-icons-svelte/lib/UserMultiple.svelte';
     import CloudDownload from 'carbon-icons-svelte/lib/CloudDownload.svelte';
 
     import { fade } from 'svelte/transition';
@@ -34,6 +35,7 @@
     import { resizeBar } from '../lib/actions';
     import { Key as GlobalKey } from '../../../engine/SettingsGlobal';
     import type { Directory } from '../../../engine/SettingsManager';
+    import { FilterItems, ListItemGroups, type ItemGroup } from '../lib/ItemFilter';
 
     let items: MediaContainer<MediaItem>[] = $state([]);
     let filteredItems: MediaContainer<MediaItem>[] = $state([]);
@@ -89,17 +91,7 @@
     let itemNameFilter = $state('');
     
     $effect(() => {
-        filteredItems = items?.filter((item) => {
-            let conditions: boolean[] = [];
-            if (itemNameFilter)
-                conditions.push(
-                    item.Title.toLowerCase().indexOf(
-                        itemNameFilter.toLowerCase(),
-                    ) !== -1,
-                );
-            if (langFilter) conditions.push(item.Tags.Value.includes(langFilter));
-            return conditions.every((condition) => condition);
-        });
+        filteredItems = FilterItems(items ?? [], { Query: itemNameFilter, Language: langFilter, Group: groupFilter });
     });
     let showItems = $derived(reverseSortOrder ? filteredItems.toReversed() : filteredItems);
 
@@ -130,6 +122,22 @@
     //Media Changed and the langFilter is no longer valid.
     $effect(()=>{
         if(items.length>0 && !MediaLanguages.includes(langFilter)) langFilterID = '*';
+    });
+
+    // Groups (translator, scanlation group, team, uploader, ...) which released the items, only available for some websites
+    let MediaGroups: ItemGroup[] = $derived(ListItemGroups(items));
+    let groupComboboxItems = $derived([
+        { id: '*', text: '*' },
+        ...MediaGroups.map((group) => {
+            return { id: group.Name, text: `${group.Name} (${group.Items})` };
+        }),
+    ]);
+
+    let groupFilterID: string = $state('*');
+    let groupFilter = $derived(groupFilterID === '*' ? null : groupFilterID);
+    //Media Changed and the groupFilter is no longer valid.
+    $effect(()=>{
+        if(items.length>0 && !MediaGroups.some((group) => group.Name === groupFilter)) groupFilterID = '*';
     });
 
     /*
@@ -374,7 +382,7 @@
     </ContextMenu>
 {/if}
 
-<div id="Item" transition:fade>
+<div id="Item" class:groups={MediaGroups.length > 0} transition:fade>
     <div id="ItemTitle">
         <h5>Item List</h5>
     </div>
@@ -395,6 +403,24 @@
             items={langComboboxItems}
         />
     </div>
+    {#if MediaGroups.length > 0}
+        <div id="GroupFilter">
+            <Button
+                icon={UserMultiple}
+                size="small"
+                tooltipPosition="bottom"
+                tooltipAlignment="center"
+                iconDescription="Groups (translator, scanlator, team, uploader)"
+            />
+
+            <Dropdown
+                placeholder="Select a group"
+                bind:selectedId={groupFilterID}
+                size="sm"
+                items={groupComboboxItems}
+            />
+        </div>
+    {/if}
     <div id="ItemFilter">
         <Search id="ItemFilterSearch" size="sm" bind:value={itemNameFilter} />
     </div>
@@ -415,6 +441,7 @@
                 <MediaComponent
                     {item}
                     multilang={!langFilter && MediaLanguages.length > 1}
+                    multigroup={!groupFilter && MediaGroups.length > 1}
                     selected={selectedItems.includes(item)}
                     hover={item === contextItem}
                     onView={(event) => onItemView(item)(event)}
@@ -503,8 +530,24 @@
         grid-area: Item;
         min-width: 22em;
     }
+    #Item.groups {
+        grid-template-rows: 2.2em 2.2em 2.2em 2.2em 1fr fit-content(2em) 2em;
+        grid-template-areas:
+            'ItemTitle Nothing'
+            'LanguageFilter Resize'
+            'GroupFilter Resize'
+            'ItemFilter Resize'
+            'ItemList Resize'
+            'DownloadButtons Resize'
+            'ItemBottom Resize';
+    }
     #LanguageFilter {
         grid-area: LanguageFilter;
+        display: grid;
+        grid-template-columns: auto 1fr;
+    }
+    #GroupFilter {
+        grid-area: GroupFilter;
         display: grid;
         grid-template-columns: auto 1fr;
     }

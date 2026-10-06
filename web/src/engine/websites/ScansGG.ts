@@ -68,6 +68,6 @@ export default class extends DecoratableMangaScraper {
             number,
             title,
             group?.title && `[${group.title}]`
-        ].joinTitleSegments()));
+        ].joinTitleSegments()).WithGroups(group?.title));
     }
 }

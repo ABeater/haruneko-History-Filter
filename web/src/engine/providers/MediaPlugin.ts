@@ -22,6 +22,7 @@ export abstract class MediaContainer<T extends MediaChild> {
     protected readonly tags = new ObservableArray<Tag, this>([], this);
     protected readonly entries = new ObservableArray<T, this>([], this);
     private readonly updating = new Observable<boolean, this>(false, this);
+    private groups: ReadonlyArray<string> = [];
 
     constructor(public readonly Identifier: string, public readonly Title: string, public readonly Parent?: MediaContainer<MediaContainer<T>>) {}
 
@@ -39,6 +40,25 @@ export abstract class MediaContainer<T extends MediaChild> {
 
     public get Tags(): IObservable<ReadonlyArray<Tag>, MediaContainer<T>> {
         return this.tags;
+    }
+
+    /**
+     * The names of the groups which released this media as provided by the website (e.g., translator, scanlation group, team, uploader, ...).
+     * This is empty when the website does not provide such information.
+     * @remarks Unlike the {@link Title}, this is not used to identify or store the media.
+     */
+    public get Groups(): ReadonlyArray<string> {
+        return this.groups;
+    }
+
+    /**
+     * Assign the {@link Groups} which released this media, blank names are ignored and duplicates are removed.
+     * @returns This media, so it can be chained with the constructor (e.g., `new Chapter(...).WithGroups(...)`)
+     */
+    public WithGroups(...groups: (string | null | undefined)[]): this {
+        const names = groups.map(group => `${group ?? ''}`.replace(/\s+/g, ' ').trim()).filter(Boolean);
+        this.groups = [ ...new Set(names) ];
+        return this;
     }
 
     public get Entries(): IObservable<ReadonlyArray<T>, MediaContainer<T>> {

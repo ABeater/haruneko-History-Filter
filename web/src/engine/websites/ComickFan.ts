@@ -40,7 +40,7 @@ export default class extends DecoratableMangaScraper {
                 chapter,
                 title,
                 `[${group[0]}]`
-            ].joinTitleSegments())
+            ].joinTitleSegments()).WithGroups(...group)
         ).distinct();
     }
 }

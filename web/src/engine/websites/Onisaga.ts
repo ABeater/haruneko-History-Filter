@@ -182,8 +182,10 @@ export default class extends DecoratableMangaScraper {
                 const links = [...el.querySelectorAll<HTMLAnchorElement>('ui-menu a[data-flux-menu-item]')];
                 links.forEach((link, index) => {
                     let group = link.querySelector('span.truncate.italic')?.textContent.trim();
-                    if (!group || /^unknown/i.test(group)) group = `Unknown ${index + 1}`;
-                    chapters.push(new Chapter(this, manga, link.pathname, [title, `[${group}]`].joinTitleSegments(), ...[chapterLanguageMap.get(languageCode)].filter(Boolean)));
+                    // NOTE: The numbered placeholder only keeps the titles distinct, it does not identify the same uploader across chapters
+                    const isKnownGroup = Boolean(group) && !/^unknown/i.test(group);
+                    if (!isKnownGroup) group = `Unknown ${index + 1}`;
+                    chapters.push(new Chapter(this, manga, link.pathname, [title, `[${group}]`].joinTitleSegments(), ...[chapterLanguageMap.get(languageCode)].filter(Boolean)).WithGroups(isKnownGroup ? group : null));
                 });
             }
         });

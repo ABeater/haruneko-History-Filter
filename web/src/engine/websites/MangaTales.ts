@@ -154,7 +154,7 @@ export default class extends DecoratableMangaScraper {
                 team?.name ? `[${team.name}]` : '',
             ].join(' ');
             const id = [manga.Identifier, manga.Title, chapter.chapter].join('/'); // slug
-            return new Chapter(this, manga, id, title.trim());
+            return new Chapter(this, manga, id, title.trim()).WithGroups(team?.name);
         });
     }
 

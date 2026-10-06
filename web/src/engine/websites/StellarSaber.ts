@@ -48,7 +48,7 @@ export default class extends DecoratableMangaScraper {
 
             if (element.dataset.versions) {
                 const data = <JSONChapter[]>JSON.parse(element.dataset.versions);
-                return data.map(({ team, url, title }) => new Chapter(this, manga, new URL(url).pathname, [title, team].joinTitleSegments()));
+                return data.map(({ team, url, title }) => new Chapter(this, manga, new URL(url).pathname, [title, team].joinTitleSegments()).WithGroups(team));
             }
             return [];
         });

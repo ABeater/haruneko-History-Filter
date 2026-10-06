@@ -180,7 +180,7 @@ export class LibGroup extends DecoratableMangaScraper {
                     scanlators = `[${teams.map(team => team.name).join(', ')}]`;
                     search.set('branch_id', `${branchId ?? ''}`);
                 }
-                return new Chapter(this, manga, `./manga/${manga.Identifier}/chapter?${search}`, `${title} ${scanlators}`.trim());
+                return new Chapter(this, manga, `./manga/${manga.Identifier}/chapter?${search}`, `${title} ${scanlators}`.trim()).WithGroups(...(teams ?? []).map(team => team.name));
             });
             return [...accumulator, ...chapters];
         }, []).reverse();
