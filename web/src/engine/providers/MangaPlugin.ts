@@ -1,11 +1,12 @@
 import { Key, Scope } from '../SettingsGlobal';
 import type { Check, Choice, Directory, ISettings, SettingsManager } from '../SettingsManager';
-import { SanitizeFileName, type StorageController, Store } from '../StorageController';
+import { type StorageController, Store } from '../StorageController';
 import { type Priority, TaskPool } from '../taskpool/TaskPool';
 import { MediaContainer, StoreableMediaContainer, MediaItem, MediaScraper } from './MediaPlugin';
 import icon from '../../img/manga.webp';
 import { NotImplementedError } from '../Error';
-import { CreateChapterExportRegistry } from '../exporters/MangaExporterRegistry';
+import { CreateChapterExportRegistry, GetChapterExportTarget } from '../exporters/MangaExporterRegistry';
+import { GetMediaDirectories, type StorageLocation } from '../StorageLocation';
 import { Observable } from '../Observable';
 import type { Tag } from '../Tags';
 
@@ -177,19 +178,22 @@ export class Chapter extends StoreableMediaContainer<Page> {
         return this.isStored;
     }
 
+    public GetStorageLocation(): StorageLocation {
+        // TODO: Inject settings manager and global scope identifier?
+        const settings = HakuNeko.SettingsManager.OpenScope(Scope);
+        const directories = GetMediaDirectories(settings.Get<Check>(Key.UseWebsiteSubDirectory).Value, this.Parent?.Parent?.Title, this.Parent?.Title);
+        const target = GetChapterExportTarget(settings.Get<Choice>(Key.MangaExportFormat).Value, this.Title);
+        return { Directories: directories, Name: target.Name, Kind: target.Kind };
+    }
+
     public async Store(resources: Map<number, string>): Promise<void> {
         // TODO: Inject settings manager and global scope identifier?
         const settings = HakuNeko.SettingsManager.OpenScope(Scope);
         const directory = settings.Get<Directory>(Key.MediaDirectory);
         await directory.EnsureAccess();
         let output = directory.Value;
-        if(settings.Get<Check>(Key.UseWebsiteSubDirectory).Value && this.Parent?.Parent) {
-            const website = SanitizeFileName(this.Parent?.Parent?.Title);
-            output = await output.getDirectoryHandle(website, { create: true });
-        }
-        if(this.Parent) {
-            const manga = SanitizeFileName(this.Parent?.Title);
-            output = await output.getDirectoryHandle(manga, { create: true });
+        for(const name of this.GetStorageLocation().Directories) {
+            output = await output.getDirectoryHandle(name, { create: true });
         }
 
         // TODO: Find more appropriate way to inject the storage dependency

@@ -1,5 +1,6 @@
 import type { ISetting, ISettings, SettingsManager } from '../SettingsManager';
 import type { StorageController } from '../StorageController';
+import type { StorageLocation } from '../StorageLocation';
 import type { Tag } from '../Tags';
 import type { Priority } from '../taskpool/TaskPool';
 import icon from '../../img/media.webp';
@@ -123,6 +124,11 @@ export abstract class MediaContainer<T extends MediaChild> {
 export abstract class StoreableMediaContainer<T extends MediaItem> extends MediaContainer<T> {
 
     public abstract get IsStored(): IObservable<boolean, MediaContainer<T>>;
+    /**
+     * Get the location (relative to the media directory) where this container is stored when downloaded with the current settings.
+     * @remarks This is only the physical representation of a download and must not be used to identify the media.
+     */
+    public abstract GetStorageLocation(): StorageLocation;
     public abstract Store(resources: Map<number, string>): Promise<void>;
 }
 

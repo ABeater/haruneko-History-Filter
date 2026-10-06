@@ -1,6 +1,6 @@
 import PDFDocument from 'pdfkit';
 import { MangaExporter } from './MangaExporter';
-import { SanitizeFileName } from '../StorageController';
+import { CreateFileTarget, type StorageTarget } from '../StorageLocation';
 import { Priority, TaskPool } from '../taskpool/TaskPool';
 import { ConvertBitmap } from '../transformers/ImageConverter';
 
@@ -29,8 +29,12 @@ export class PortableDocumentFormatExporter extends MangaExporter {
         return Promise.all(promises);
     }
 
+    public static GetTarget(chapterTitle: string): StorageTarget {
+        return CreateFileTarget(chapterTitle, '.pdf');
+    }
+
     public override async Export(sourceFileList: Map<number, string>, targetDirectory: FileSystemDirectoryHandle, chapterTitle: string, _mangaTitle?: string): Promise<void> {
-        const file = await targetDirectory.getFileHandle(SanitizeFileName(chapterTitle + '.pdf'), { create: true });
+        const file = await targetDirectory.getFileHandle(PortableDocumentFormatExporter.GetTarget(chapterTitle).Name, { create: true });
         const stream = await file.createWritable();
         const pdf = new PDFDocument({
             autoFirstPage: false,

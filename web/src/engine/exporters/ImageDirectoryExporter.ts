@@ -1,13 +1,17 @@
 import { MangaExporter } from './MangaExporter';
-import { SanitizeFileName } from '../StorageController';
+import { CreateDirectoryTarget, type StorageTarget } from '../StorageLocation';
 import { TaskPool, Priority } from '../taskpool/TaskPool';
 
 export class ImageDirectoryExporter extends MangaExporter {
 
+    public static GetTarget(chapterTitle: string): StorageTarget {
+        return CreateDirectoryTarget(chapterTitle);
+    }
+
     public override async Export(sourceFileList: Map<number, string>, targetDirectory: FileSystemDirectoryHandle, chapterTitle: string, _mangaTitle?: string): Promise<void> {
         const taskPool = new TaskPool(8);
         const digits = sourceFileList.size.toString().length;
-        const directory = await targetDirectory.getDirectoryHandle(SanitizeFileName(chapterTitle), { create: true });
+        const directory = await targetDirectory.getDirectoryHandle(ImageDirectoryExporter.GetTarget(chapterTitle).Name, { create: true });
 
         // TODO: delete all existing entries?
         const promises = [...sourceFileList].map(([ index, tempfile ]) => taskPool.Add(async () => {

@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { MangaExporter } from './MangaExporter';
-import { SanitizeFileName } from '../StorageController';
+import { CreateFileTarget, type StorageTarget } from '../StorageLocation';
 
 export class ElectronicPublicationExporter extends MangaExporter {
 
@@ -178,6 +178,10 @@ export class ElectronicPublicationExporter extends MangaExporter {
         */
     }
 
+    public static GetTarget(chapterTitle: string): StorageTarget {
+        return CreateFileTarget(chapterTitle, '.epub');
+    }
+
     public override async Export(sourceFileList: Map<number, string>, targetDirectory: FileSystemDirectoryHandle, chapterTitle: string, _mangaTitle?: string): Promise<void> {
 
         const zip = new JSZip();
@@ -214,7 +218,7 @@ export class ElectronicPublicationExporter extends MangaExporter {
         oebps.file('toc.xhtml', toc.serialize(), { compression: 'DEFLATE' });
         oebps.file('content.opf', opf.serialize(), { compression: 'DEFLATE' });
 
-        const file = await targetDirectory.getFileHandle(SanitizeFileName(chapterTitle + '.epub'), { create: true });
+        const file = await targetDirectory.getFileHandle(ElectronicPublicationExporter.GetTarget(chapterTitle).Name, { create: true });
         const stream = await file.createWritable();
         await stream.write(await zip.generateAsync({ type: 'blob' }));
         await stream.close();

@@ -1,4 +1,17 @@
 import { type StorageController } from '../StorageController';
+import type { StorageTarget } from '../StorageLocation';
+
+/**
+ * The constructor of a manga exporter, including the (static) naming of its output.
+ */
+export type MangaExporterClass = {
+    new (storageController: StorageController): MangaExporter;
+    /**
+     * Get the name and kind of the file system entry which is created by {@link MangaExporter.Export} for the given {@link chapterTitle}.
+     * This is the single source of truth for the chapter output name, it is also used to detect existing downloads.
+     */
+    GetTarget(chapterTitle: string): StorageTarget;
+};
 
 // See: https://developer.mozilla.org/en-US/docs/Web/Media/Formats/Image_types
 const mimeFileExtension = {

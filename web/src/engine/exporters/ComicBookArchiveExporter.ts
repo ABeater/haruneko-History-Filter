@@ -1,6 +1,6 @@
 import JSZip from 'jszip';
 import { MangaExporter } from './MangaExporter';
-import { SanitizeFileName } from '../StorageController';
+import { CreateFileTarget, type StorageTarget } from '../StorageLocation';
 
 export class ComicBookArchiveExporter extends MangaExporter {
 
@@ -21,6 +21,10 @@ export class ComicBookArchiveExporter extends MangaExporter {
         return this.xmlSerializer.serializeToString(xml);
     }
 
+    public static GetTarget(chapterTitle: string): StorageTarget {
+        return CreateFileTarget(chapterTitle, '.cbz');
+    }
+
     public override async Export(sourceFileList: Map<number, string>, targetDirectory: FileSystemDirectoryHandle, chapterTitle: string, mangaTitle?: string): Promise<void> {
         const zip = new JSZip();
         const digits = sourceFileList.size.toString().length;
@@ -32,7 +36,7 @@ export class ComicBookArchiveExporter extends MangaExporter {
             zip.file(name, data, { compression: 'STORE' });
         }
 
-        const file = await targetDirectory.getFileHandle(SanitizeFileName(chapterTitle + '.cbz'), { create: true });
+        const file = await targetDirectory.getFileHandle(ComicBookArchiveExporter.GetTarget(chapterTitle).Name, { create: true });
         const stream = await file.createWritable();
         await stream.write(await zip.generateAsync({ type: 'blob' }));
         await stream.close();
