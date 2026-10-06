@@ -12,11 +12,30 @@ new TestFixture({
     },
     child: {
         id: 'CKjlYQaj',
-        title: 'Chapter 44'
+        title: 'Chapter 44',
+        groups: [ 'Alpha' ]
     },
     entry: {
         index: 0,
         size: 179_770,
         type: 'image/webp'
+    }
+}).AssertWebsite();
+
+// Several groups released the same chapters with the same title
+new TestFixture({
+    plugin: {
+        id: 'atsumaru',
+        title: 'Atsumaru'
+    },
+    container: {
+        url: 'https://atsu.moe/manga/MluV8',
+        id: 'MluV8',
+        title: 'Noa Is My Senior, and My Friend.'
+    },
+    child: {
+        id: '1sh2Ns',
+        title: 'Chapter 1 [Gamma]',
+        groups: [ 'Gamma' ]
     }
 }).AssertWebsite();

@@ -14,7 +14,17 @@ type APIManga = {
         id: string;
         title: string;
         index: number;
+        scanId?: string;
     }[];
+};
+
+type APIMangaPage = {
+    mangaPage: {
+        scanlators?: {
+            id: string;
+            name: string;
+        }[];
+    };
 };
 
 type APIMangas = {
@@ -60,10 +70,20 @@ export default class extends DecoratableMangaScraper {
     }
 
     public override async FetchChapters(manga: Manga): Promise<Chapter[]> {
-        const { chapters } = await FetchJSON<APIManga>(new Request(new URL(`./manga/info?mangaId=${manga.Identifier}`, this.apiURL)));
+        const [ { chapters }, scanlators ] = await Promise.all([
+            FetchJSON<APIManga>(new Request(new URL(`./manga/info?mangaId=${manga.Identifier}`, this.apiURL))),
+            // NOTE: The names of the groups are optional, the chapters must not fail without them
+            FetchJSON<APIMangaPage>(new Request(new URL(`./manga/page?id=${manga.Identifier}`, this.apiURL))).then(({ mangaPage }) => mangaPage.scanlators ?? []).catch((): APIMangaPage['mangaPage']['scanlators'] => []),
+        ]);
+        const groups = new Map<string, string>(scanlators.map(({ id, name }) => [ id, name ]));
+        // Releases of different groups usually have the same title, so the group is added to keep them distinct (e.g., for the file name)
+        const hasMultipleGroups = new Set(chapters.map(({ scanId }) => scanId)).size > 1;
         return chapters
             .sort((self, other) => other.index - self.index)
-            .map(({ id, title }) => new Chapter(this, manga, id, title));
+            .map(({ id, title, scanId }) => {
+                const group = groups.get(scanId);
+                return new Chapter(this, manga, id, hasMultipleGroups && group ? `${title} [${group}]` : title).WithGroups(group);
+            });
     }
 
     public override async FetchPages(chapter: Chapter): Promise<Page[]> {
