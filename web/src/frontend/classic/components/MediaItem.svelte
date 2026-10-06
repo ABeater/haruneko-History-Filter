@@ -41,6 +41,7 @@
     import { Key as GlobalKey } from '../../../engine/SettingsGlobal';
     import type { Directory } from '../../../engine/SettingsManager';
     import { GlobalSettings } from '../stores/Settings.svelte';
+    import { Presence, type DownloadHistoryEntryState, type HistoryChangedEvent } from '../../../engine/DownloadHistory';
     import { GetGroupsNotInTitle } from '../lib/ItemFilter';
     
     import { Tags, type Tag } from '../../../engine/Tags';
@@ -81,6 +82,7 @@
         OnFlagChangedCallback,
     );
     onMount(async () => {
+        refreshHistory();
         flag = await HakuNeko.ItemflagManager.GetItemFlagType(item);
     });
     onDestroy(() => {
@@ -89,6 +91,7 @@
         );
         downloadTask?.Status.Unsubscribe(refreshDownloadStatus);
         HakuNeko.DownloadManager.Queue.Unsubscribe(taskQueueChanged);
+        HakuNeko.DownloadHistory.Changed.Unsubscribe(onHistoryChanged);
     });
 
     let downloadTask: DownloadTask = $state();
@@ -102,6 +105,39 @@
     HakuNeko.DownloadManager.Queue.Subscribe(taskQueueChanged);
     async function refreshDownloadStatus(newstatus: Status, _task: DownloadTask) {
         downloadTaskStatus = newstatus;
+    }
+
+    // Persistent download history (survives restarts), independent from the state of the download task
+    let history: DownloadHistoryEntryState = $state({ Downloaded: false, Presence: null, Location: null });
+    let wasDownloaded = $derived(history.Downloaded || downloadTaskStatus === Status.Completed);
+    let isMissing = $derived(history.Downloaded && history.Presence === Presence.Missing);
+    let isPresent = $derived(!isMissing && (history.Presence === Presence.Present || downloadTaskStatus === Status.Completed));
+
+    function refreshHistory() {
+        history = HakuNeko.DownloadHistory.GetEntryState(item);
+    }
+    function onHistoryChanged(event: HistoryChangedEvent) {
+        if(!event?.MediaKey || event.MediaKey === HakuNeko.DownloadHistory.GetMediaKey(item?.Parent)) {
+            refreshHistory();
+        }
+    }
+    HakuNeko.DownloadHistory.Changed.Subscribe(onHistoryChanged);
+
+    /**
+     * Download a chapter again whose files are missing, using the existing download task (retry) if available.
+     */
+    async function downloadAgain() {
+        if(!downloadTask) {
+            return addDownload(item as StoreableMediaContainer<MediaItem>);
+        }
+        try {
+            await HakuNeko.SettingsManager.OpenScope().Get<Directory>(GlobalKey.MediaDirectory).EnsureAccess();
+        } catch(error) {
+            // TODO: Use appropriate error visualization ...
+            alert(error?.message ?? error);
+            return;
+        }
+        downloadTask.Run();
     }
 
     async function addDownload(item: StoreableMediaContainer<MediaItem>) {
@@ -135,17 +171,50 @@
     {onmouseenter}
     {oncontextmenu}
 >
-    {#if !downloadTaskStatus}
-        <Button
-            role="download"
-            size="small"
-            kind="ghost"
-            tooltipPosition="right"
-            tooltipAlignment="end"
-            icon={CloudDownload}
-            iconDescription="Download"
-            onclick={() => addDownload(item as StoreableMediaContainer<MediaItem>)}
-        />
+    {#if !downloadTaskStatus || downloadTaskStatus === Status.Completed}
+        {#if isMissing}
+            <Button
+                size="small"
+                kind="ghost"
+                tooltipPosition="right"
+                tooltipAlignment="end"
+                iconDescription="Downloaded before, but the files are missing: click to download again"
+                onclick={downloadAgain}
+            >
+                <FolderOpen class="history-missing" fill="var(--cds-support-warning)" />
+            </Button>
+        {:else if isPresent}
+            <Button
+                size="small"
+                kind="ghost"
+                tooltipPosition="right"
+                tooltipAlignment="end"
+                iconDescription="Downloaded"
+            >
+                <FolderOpen class="history-present" fill="var(--cds-support-success)" />
+            </Button>
+        {:else if wasDownloaded}
+            <Button
+                size="small"
+                kind="ghost"
+                tooltipPosition="right"
+                tooltipAlignment="end"
+                iconDescription="Downloaded before (files not yet verified on disk)"
+            >
+                <FolderOpen class="history-unverified" fill="var(--cds-icon-secondary)" />
+            </Button>
+        {:else}
+            <Button
+                role="download"
+                size="small"
+                kind="ghost"
+                tooltipPosition="right"
+                tooltipAlignment="end"
+                icon={CloudDownload}
+                iconDescription="Download"
+                onclick={() => addDownload(item as StoreableMediaContainer<MediaItem>)}
+            />
+        {/if}
     {:else if downloadTaskStatus === Status.Queued}
         <Button
             size="small"
@@ -199,17 +268,6 @@
             iconDescription="Error: click to retry (detailed error in download tasks)"
             onclick={() => downloadTask.Run()}
         />
-    {:else if downloadTaskStatus === Status.Completed}
-        <Button
-            size="small"
-            kind="ghost"
-            tooltipPosition="right"
-            tooltipAlignment="end"
-            iconDescription="Download complete"
-            onclick={() => alert('Download complete. TODO: open folder using system explorer')}
-        >
-            <FolderOpen fill="var(--cds-support-03)" />
-        </Button>
     {:else}
         <Button
             size="small"

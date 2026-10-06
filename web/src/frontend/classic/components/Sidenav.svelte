@@ -29,6 +29,8 @@
     import SettingsMenu from './settings/SettingsModal.svelte';
     import PluginSelect from './PluginSelect.svelte';
     import BookmarksImport from './BookmarksImport.svelte';
+    import DownloadHistoryModal from './DownloadHistory.svelte';
+    import RecentlyViewed from 'carbon-icons-svelte/lib/RecentlyViewed.svelte';
 
     import { Store as UI } from '../stores/Stores.svelte';
     import { GlobalSettings, Settings as UISettings } from '../stores/Settings.svelte';
@@ -44,6 +46,7 @@
     let isSettingsModalOpen =  $state(false);
     let isPluginModalOpen = $state(false);
     let isBookmarksImportModalOpen =  $state(false);
+    let isDownloadHistoryModalOpen = $state(false);
 </script>
 
 <PluginSelect bind:isPluginModalOpen on:close={() => (isPluginModalOpen = false)} />
@@ -52,6 +55,9 @@
 {/if}
 {#if isBookmarksImportModalOpen}
     <BookmarksImport bind:isModalOpen={isBookmarksImportModalOpen} />
+{/if}
+{#if isDownloadHistoryModalOpen}
+    <DownloadHistoryModal bind:isModalOpen={isDownloadHistoryModalOpen} />
 {/if}
 <SideNav bind:isOpen rail={UISettings.SidenavTrail.Value} expansionBreakpoint={100000}>
     <SideNavItems>
@@ -86,6 +92,11 @@
             text="import/export"
             icon={ImportExport}
             onclick={() => (isBookmarksImportModalOpen = true)}
+        />
+        <SideNavLink
+            text="Download history"
+            icon={RecentlyViewed}
+            onclick={() => (isDownloadHistoryModalOpen = true)}
         />
         <SideNavMenu text={GlobalSettings.Locale.Frontend_Settings()} icon={Settings}>
             <SideNavLink
