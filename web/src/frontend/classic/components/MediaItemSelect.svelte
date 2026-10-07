@@ -15,6 +15,7 @@
     import ChevronSort from 'carbon-icons-svelte/lib/ChevronSort.svelte';
     import EarthFilled from 'carbon-icons-svelte/lib/EarthFilled.svelte';
     import UserMultiple from 'carbon-icons-svelte/lib/UserMultiple.svelte';
+    import Certificate from 'carbon-icons-svelte/lib/Certificate.svelte';
     import CloudDownload from 'carbon-icons-svelte/lib/CloudDownload.svelte';
 
     import { fade } from 'svelte/transition';
@@ -36,7 +37,8 @@
     import { Key as GlobalKey } from '../../../engine/SettingsGlobal';
     import type { Directory } from '../../../engine/SettingsManager';
     import { CanOpenFolders, OpenEntryFolder } from '../lib/folders';
-    import { FilterItems, ListItemGroups, type ItemGroup } from '../lib/ItemFilter';
+    import { FilterItems, ListAttributeValues } from '../lib/ItemFilter';
+    import { MediaAttribute } from '../../../engine/providers/MediaPlugin';
     const canOpenFolders = CanOpenFolders();
 
     let items: MediaContainer<MediaItem>[] = $state([]);
@@ -93,7 +95,7 @@
     let itemNameFilter = $state('');
     
     $effect(() => {
-        filteredItems = FilterItems(items ?? [], { Query: itemNameFilter, Language: langFilter, Group: groupFilter });
+        filteredItems = FilterItems(items ?? [], { Query: itemNameFilter, Language: langFilter, Attributes: attributeFilterValues });
     });
     let showItems = $derived(reverseSortOrder ? filteredItems.toReversed() : filteredItems);
 
@@ -126,21 +128,32 @@
         if(items.length>0 && !MediaLanguages.includes(langFilter)) langFilterID = '*';
     });
 
-    // Groups (translator, scanlation group, team, uploader, ...) which released the items, only available for some websites
-    let MediaGroups: ItemGroup[] = $derived(ListItemGroups(items));
-    let groupComboboxItems = $derived([
-        { id: '*', text: '*' },
-        ...MediaGroups.map((group) => {
-            return { id: group.Name, text: `${group.Name} (${group.Items})` };
-        }),
-    ]);
+    // Optional attributes which only some websites provide, each attribute occurring in the items gets its own filter
+    const attributeFilterInfos = [
+        { Attribute: MediaAttribute.Group, Icon: UserMultiple, Description: 'Groups (translator, scanlator, team, uploader)', Placeholder: 'Select a group' },
+        { Attribute: MediaAttribute.Type, Icon: Certificate, Description: 'Types (e.g., official, unofficial)', Placeholder: 'Select a type' },
+    ];
+    let attributeFilters = $derived(attributeFilterInfos
+        .map((info) => ({ ...info, Values: ListAttributeValues(items, info.Attribute) }))
+        .filter((filter) => filter.Values.length > 0));
 
-    let groupFilterID: string = $state('*');
-    let groupFilter = $derived(groupFilterID === '*' ? null : groupFilterID);
-    //Media Changed and the groupFilter is no longer valid.
+    let attributeFilterIDs: Record<string, string> = $state(Object.fromEntries(attributeFilterInfos.map((info) => [ info.Attribute, '*' ])));
+    let attributeFilterValues = $derived(Object.fromEntries(attributeFilterInfos.map(({ Attribute }) => {
+        return [ Attribute, attributeFilterIDs[Attribute] === '*' ? null : attributeFilterIDs[Attribute] ];
+    })));
+    //Media Changed and an attribute filter is no longer valid.
     $effect(()=>{
-        if(items.length>0 && !MediaGroups.some((group) => group.Name === groupFilter)) groupFilterID = '*';
+        if(items.length === 0) return;
+        for(const { Attribute } of attributeFilterInfos) {
+            const value = attributeFilterValues[Attribute];
+            const values = attributeFilters.find((filter) => filter.Attribute === Attribute)?.Values ?? [];
+            if(value && !values.some((entry) => entry.Name === value)) attributeFilterIDs[Attribute] = '*';
+        }
     });
+    // Attributes which distinguish the listed items (more than one value and not filtered by)
+    let distinguishingAttributes = $derived(attributeFilters
+        .filter((filter) => filter.Values.length > 1 && !attributeFilterValues[filter.Attribute])
+        .map((filter) => filter.Attribute));
 
     /*
      * Multi Item Selection
@@ -390,7 +403,7 @@
     </ContextMenu>
 {/if}
 
-<div id="Item" class:groups={MediaGroups.length > 0} transition:fade>
+<div id="Item" class:attributes={attributeFilters.length > 0} transition:fade>
     <div id="ItemTitle">
         <h5>Item List</h5>
     </div>
@@ -411,22 +424,29 @@
             items={langComboboxItems}
         />
     </div>
-    {#if MediaGroups.length > 0}
-        <div id="GroupFilter">
-            <Button
-                icon={UserMultiple}
-                size="small"
-                tooltipPosition="bottom"
-                tooltipAlignment="center"
-                iconDescription="Groups (translator, scanlator, team, uploader)"
-            />
+    {#if attributeFilters.length > 0}
+        <div id="AttributeFilters">
+            {#each attributeFilters as filter (filter.Attribute)}
+                <div class="attribute-filter">
+                    <Button
+                        icon={filter.Icon}
+                        size="small"
+                        tooltipPosition="bottom"
+                        tooltipAlignment="center"
+                        iconDescription={filter.Description}
+                    />
 
-            <Dropdown
-                placeholder="Select a group"
-                bind:selectedId={groupFilterID}
-                size="sm"
-                items={groupComboboxItems}
-            />
+                    <Dropdown
+                        placeholder={filter.Placeholder}
+                        bind:selectedId={attributeFilterIDs[filter.Attribute]}
+                        size="sm"
+                        items={[
+                            { id: '*', text: '*' },
+                            ...filter.Values.map((value) => ({ id: value.Name, text: `${value.Name} (${value.Items})` })),
+                        ]}
+                    />
+                </div>
+            {/each}
         </div>
     {/if}
     <div id="ItemFilter">
@@ -449,7 +469,7 @@
                 <MediaComponent
                     {item}
                     multilang={!langFilter && MediaLanguages.length > 1}
-                    multigroup={!groupFilter && MediaGroups.length > 1}
+                    attributes={distinguishingAttributes}
                     selected={selectedItems.includes(item)}
                     hover={item === contextItem}
                     onView={(event) => onItemView(item)(event)}
@@ -538,12 +558,12 @@
         grid-area: Item;
         min-width: 22em;
     }
-    #Item.groups {
-        grid-template-rows: 2.2em 2.2em 2.2em 2.2em 1fr fit-content(2em) 2em;
+    #Item.attributes {
+        grid-template-rows: 2.2em 2.2em auto 2.2em 1fr fit-content(2em) 2em;
         grid-template-areas:
             'ItemTitle Nothing'
             'LanguageFilter Resize'
-            'GroupFilter Resize'
+            'AttributeFilters Resize'
             'ItemFilter Resize'
             'ItemList Resize'
             'DownloadButtons Resize'
@@ -554,8 +574,13 @@
         display: grid;
         grid-template-columns: auto 1fr;
     }
-    #GroupFilter {
-        grid-area: GroupFilter;
+    #AttributeFilters {
+        grid-area: AttributeFilters;
+        display: grid;
+        grid-auto-rows: 2.2em;
+        gap: 0.3em;
+    }
+    .attribute-filter {
         display: grid;
         grid-template-columns: auto 1fr;
     }

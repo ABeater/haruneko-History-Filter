@@ -14,7 +14,8 @@ new TestFixture({
     },
     child: {
         id: 'chapters/7180211',
-        title: 'Ch. 25 (Colored Council) (official) (en)'
+        title: 'Ch. 25 (Colored Council) (official) (en)',
+        attributes: { Type: [ 'official' ] }
     },
     entry: {
         index: 2,
@@ -37,7 +38,8 @@ new TestFixture({
     },
     child: {
         id: 'chapters/5872243',
-        title: 'Ch. 25 吉岡騒然 (unofficial) (ja)'
+        title: 'Ch. 25 吉岡騒然 (unofficial) (ja)',
+        attributes: { Type: [ 'unofficial' ] }
     },
     entry: {
         index: 2,
@@ -60,7 +62,8 @@ new TestFixture({
     },
     child: {
         id: 'volumes/233258',
-        title: 'Vol. 10 (en)'
+        title: 'Vol. 10 (en)',
+        attributes: { Type: [] }
     },
     entry: {
         index: 2,

@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import type { JSHandle } from 'puppeteer-core';
 import { PuppeteerFixture } from '../../test/PuppeteerFixture';
 import type { IValue } from '../src/engine/SettingsManager';
-import type { MediaContainer, MediaChild, MediaItem } from '../src/engine/providers/MediaPlugin';
+import type { MediaAttribute, MediaContainer, MediaChild, MediaItem } from '../src/engine/providers/MediaPlugin';
 
 export type Config = {
     plugin: {
@@ -20,8 +20,8 @@ export type Config = {
     child?: {
         id: string;
         title: string;
-        /** The expected groups (translator, scanlation group, ...) of the chapter, not verified when omitted */
-        groups?: string[];
+        /** The expected values of attributes (e.g., `{ Group: [ 'Team A' ] }`) of the chapter, attributes which are omitted are not verified */
+        attributes?: Partial<Record<`${MediaAttribute}`, string[]>>;
         timeout?: number;
     };
     entry?: {
@@ -122,8 +122,8 @@ export class TestFixture<TWebsitePlugin extends MediaContainer<MediaChild>, TCon
                 remoteChild = await this.GetRemoteChild(remoteContainer, this.config.child.id);
                 expect(await remoteChild.evaluate(child => child?.Identifier || 'Chapter not found!')).toEqual(this.config.child.id);
                 expect(await remoteChild.evaluate(child => child.Title)).toEqual(this.config.child.title);
-                if(this.config.child.groups) {
-                    expect(await remoteChild.evaluate(child => child.Groups)).toEqual(this.config.child.groups);
+                for(const [ attribute, values ] of Object.entries(this.config.child.attributes ?? {})) {
+                    expect(await remoteChild.evaluate((child, attribute) => child.GetAttribute(attribute), attribute as MediaAttribute)).toEqual(values);
                 }
             });
 

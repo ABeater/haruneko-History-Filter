@@ -2,6 +2,7 @@ import { Tags } from '../Tags';
 import icon from './MangaFire.webp';
 import { FetchJSON } from '../platform/FetchProvider';
 import { DecoratableMangaScraper, Manga, Chapter, Page, type MangaPlugin } from '../providers/MangaPlugin';
+import { MediaAttribute } from '../providers/MediaPlugin';
 import * as Common from './decorators/Common';
 import { GetBytesFromBase64, GetBytesFromUTF8, GetURLBase64FromBytes } from '../BufferEncoder';
 
@@ -122,7 +123,7 @@ export default class extends DecoratableMangaScraper {
             for (let page = 1, run = true; run; page++) {
                 const { items } = await this.FetchAPI<APIChapters>(`./titles/${manga.Identifier}/chapters?sort=number&order=desc&page=${page}&limit=200`);
                 const chapters = items.map(({ id, language, name, number, type }) => new Chapter(this, manga, `chapters/${id}`, [`Ch. ${number}`, name, `(${type})`, `(${language})`].joinTitleSegments(),
-                    ...[chapterLanguageMap.get(language)].filter(Boolean)));
+                    ...[chapterLanguageMap.get(language)].filter(Boolean)).WithAttribute(MediaAttribute.Type, type));
                 chapters.length > 0 ? yield* chapters : run = false;
             }
         }.call(this));

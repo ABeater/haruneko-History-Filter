@@ -10,6 +10,16 @@ import { Observable, ObservableArray, type IObservable } from '../Observable';
 
 export type MediaChild = MediaContainer<MediaChild> | MediaItem;
 
+/**
+ * Optional information which a website may provide about a media (e.g., to distinguish several releases of the same chapter).
+ */
+export const enum MediaAttribute {
+    /** The groups which released the media (e.g., translator, scanlation group, team, uploader, ...) */
+    Group = 'Group',
+    /** The kind of release (e.g., official or unofficial) */
+    Type = 'Type',
+}
+
 export abstract class MediaItem {
 
     public constructor(public readonly Parent: MediaContainer<MediaItem>) {
@@ -23,7 +33,7 @@ export abstract class MediaContainer<T extends MediaChild> {
     protected readonly tags = new ObservableArray<Tag, this>([], this);
     protected readonly entries = new ObservableArray<T, this>([], this);
     private readonly updating = new Observable<boolean, this>(false, this);
-    private groups: ReadonlyArray<string> = [];
+    private readonly attributes = new Map<MediaAttribute, ReadonlyArray<string>>();
 
     constructor(public readonly Identifier: string, public readonly Title: string, public readonly Parent?: MediaContainer<MediaContainer<T>>) {}
 
@@ -44,22 +54,36 @@ export abstract class MediaContainer<T extends MediaChild> {
     }
 
     /**
-     * The names of the groups which released this media as provided by the website (e.g., translator, scanlation group, team, uploader, ...).
+     * Get the values of the given {@link attribute} as provided by the website.
      * This is empty when the website does not provide such information.
-     * @remarks Unlike the {@link Title}, this is not used to identify or store the media.
+     * @remarks Unlike the {@link Title}, attributes are not used to identify or store the media.
      */
-    public get Groups(): ReadonlyArray<string> {
-        return this.groups;
+    public GetAttribute(attribute: MediaAttribute): ReadonlyArray<string> {
+        return this.attributes.get(attribute) ?? [];
     }
 
     /**
-     * Assign the {@link Groups} which released this media, blank names are ignored and duplicates are removed.
-     * @returns This media, so it can be chained with the constructor (e.g., `new Chapter(...).WithGroups(...)`)
+     * Assign the values of the given {@link attribute}, blank values are ignored and duplicates are removed.
+     * @returns This media, so it can be chained with the constructor (e.g., `new Chapter(...).WithAttribute(...)`)
+     */
+    public WithAttribute(attribute: MediaAttribute, ...values: (string | null | undefined)[]): this {
+        const normalized = values.map(value => `${value ?? ''}`.replace(/\s+/g, ' ').trim()).filter(Boolean);
+        this.attributes.set(attribute, [ ...new Set(normalized) ]);
+        return this;
+    }
+
+    /**
+     * The names of the groups which released this media (shorthand for the {@link MediaAttribute.Group} attribute).
+     */
+    public get Groups(): ReadonlyArray<string> {
+        return this.GetAttribute(MediaAttribute.Group);
+    }
+
+    /**
+     * Assign the groups which released this media (shorthand for the {@link MediaAttribute.Group} attribute).
      */
     public WithGroups(...groups: (string | null | undefined)[]): this {
-        const names = groups.map(group => `${group ?? ''}`.replace(/\s+/g, ' ').trim()).filter(Boolean);
-        this.groups = [ ...new Set(names) ];
-        return this;
+        return this.WithAttribute(MediaAttribute.Group, ...groups);
     }
 
     public get Entries(): IObservable<ReadonlyArray<T>, MediaContainer<T>> {

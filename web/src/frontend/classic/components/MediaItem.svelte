@@ -7,14 +7,14 @@
         selected: boolean;
         hover: boolean;
         multilang ?: boolean;
-        multigroup ?: boolean;
+        attributes ?: ReadonlyArray<MediaAttribute>;
         onView: (MouseEvent) => void;
         onmouseup: (MouseEvent) => void;
         onmousedown: (MouseEvent) => void;
         onmouseenter: (MouseEvent) => void;
         oncontextmenu: (MouseEvent) => void;
     };
-    let { item, selected, hover , multilang = false, multigroup = false, onView, onmouseup, onmousedown, onmouseenter, oncontextmenu }: Props  = $props();
+    let { item, selected, hover , multilang = false, attributes = [], onView, onmouseup, onmousedown, onmouseenter, oncontextmenu }: Props  = $props();
 
     import { Button, ClickableTile } from 'carbon-components-svelte';
     import BookmarkFilled from 'carbon-icons-svelte/lib/BookmarkFilled.svelte';
@@ -43,7 +43,8 @@
     import { GlobalSettings } from '../stores/Settings.svelte';
     import { Presence, type DownloadHistoryEntryState, type HistoryChangedEvent } from '../../../engine/DownloadHistory';
     import { CanOpenFolders, OpenEntryFolder } from '../lib/folders';
-    import { GetGroupsNotInTitle } from '../lib/ItemFilter';
+    import { GetAttributeValuesNotInTitle } from '../lib/ItemFilter';
+    import { MediaAttribute } from '../../../engine/providers/MediaPlugin';
     
     import { Tags, type Tag } from '../../../engine/Tags';
     const availableLanguageTags = Tags.Language.toArray();
@@ -60,9 +61,14 @@
         );
     }
 
-    // Show the groups to distinguish releases with the same title, unless the website already added them to the title
-    let groupsNotInTitle = $derived(multigroup ? GetGroupsNotInTitle(item) : []);
-    let tooltip = $derived(item.Groups.length > 0 ? `${item.Title}\nGroup: ${item.Groups.join(', ')}` : item.Title);
+    // Show the attributes (e.g., group) to distinguish releases with the same title, unless the website already added them to the title
+    let attributesNotInTitle = $derived(GetAttributeValuesNotInTitle(item, ...attributes));
+    let tooltip = $derived([
+        item.Title,
+        ...[ MediaAttribute.Group, MediaAttribute.Type ]
+            .filter((attribute) => item.GetAttribute(attribute).length > 0)
+            .map((attribute) => `${attribute}: ${item.GetAttribute(attribute).join(', ')}`),
+    ].join('\n'));
 
     let flag: FlagType = $state();
     const flagiconmap = new Map<FlagType, any>([
@@ -306,8 +312,8 @@
             </span>
         {/if}
         <span class="itemtitle" title={tooltip}>{item.Title}</span>
-        {#if groupsNotInTitle.length > 0}
-            <span class="groups" title={tooltip}>{groupsNotInTitle.join(', ')}</span>
+        {#if attributesNotInTitle.length > 0}
+            <span class="attributes" title={tooltip}>{attributesNotInTitle.join(', ')}</span>
         {/if}
     </ClickableTile>
 </div>
@@ -363,7 +369,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
     }
-    .groups {
+    .attributes {
         flex-shrink: 0;
         max-width: 50%;
         overflow: hidden;

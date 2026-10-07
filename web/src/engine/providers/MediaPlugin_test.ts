@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { MediaContainer, type MediaItem } from './MediaPlugin';
+import { MediaAttribute, MediaContainer, type MediaItem } from './MediaPlugin';
 
 class TestContainer extends MediaContainer<MediaItem> {
     protected PerformUpdate(): Promise<MediaItem[]> {
@@ -48,6 +48,36 @@ describe('MediaContainer', () => {
 
             expect(testee.Identifier).toBe('id');
             expect(testee.Title).toBe('Ch. 2 [Group A]');
+        });
+    });
+
+    describe('Attributes', () => {
+
+        it('Should be empty when not assigned', async () => {
+            const testee = new TestContainer('id', 'Ch. 2');
+
+            expect(testee.GetAttribute(MediaAttribute.Group)).toEqual([]);
+            expect(testee.GetAttribute(MediaAttribute.Type)).toEqual([]);
+        });
+
+        it('Should keep the values of different attributes separately', async () => {
+            const testee = new TestContainer('id', 'Ch. 2').WithAttribute(MediaAttribute.Type, 'official').WithGroups('Group A');
+
+            expect(testee.GetAttribute(MediaAttribute.Type)).toEqual([ 'official' ]);
+            expect(testee.GetAttribute(MediaAttribute.Group)).toEqual([ 'Group A' ]);
+            expect(testee.Groups).toEqual([ 'Group A' ]);
+        });
+
+        it('Should normalize values like the groups', async () => {
+            const testee = new TestContainer('id', 'Ch. 2').WithAttribute(MediaAttribute.Type, ' un\nofficial ', null, 'un official', '');
+
+            expect(testee.GetAttribute(MediaAttribute.Type)).toEqual([ 'un official' ]);
+        });
+
+        it('Should provide the groups as the group attribute', async () => {
+            const testee = new TestContainer('id', 'Ch. 2').WithAttribute(MediaAttribute.Group, 'Group B');
+
+            expect(testee.Groups).toEqual([ 'Group B' ]);
         });
     });
 });

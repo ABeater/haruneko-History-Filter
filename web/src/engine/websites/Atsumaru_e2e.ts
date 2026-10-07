@@ -13,7 +13,7 @@ new TestFixture({
     child: {
         id: 'CKjlYQaj',
         title: 'Chapter 44',
-        groups: [ 'Alpha' ]
+        attributes: { Group: [ 'Alpha' ] }
     },
     entry: {
         index: 0,
@@ -36,6 +36,6 @@ new TestFixture({
     child: {
         id: '1sh2Ns',
         title: 'Chapter 1 [Gamma]',
-        groups: [ 'Gamma' ]
+        attributes: { Group: [ 'Gamma' ] }
     }
 }).AssertWebsite();
