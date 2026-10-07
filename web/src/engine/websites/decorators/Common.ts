@@ -6,6 +6,7 @@ import type { MediaChild, MediaContainer } from '../../providers/MediaPlugin';
 import type { Priority } from '../../taskpool/TaskPool';
 import DeProxify from '../../transformers/ImageLinkDeProxifier';
 import { Delay } from '../../BackgroundTimers';
+import { ThrowOnTransientStatus } from '../../TransientErrors';
 
 export function ThrowOnUnsupportedDecoratorContext(context: ClassDecoratorContext) {
     if (context && context.kind !== 'class') {
@@ -591,6 +592,7 @@ export async function FetchImageAjax(this: MangaScraper, page: Page, priority: P
             headers['Origin'] = imageLink.protocol + '//' + Date.now().toString(36) + Math.random().toString(36);
             response = await Fetch(new Request(imageLink, { signal, headers }));
         }
+        ThrowOnTransientStatus(response);
         return detectMimeType ? GetTypedData(await response.arrayBuffer()) : response.blob();
     }, priority, signal);
 }

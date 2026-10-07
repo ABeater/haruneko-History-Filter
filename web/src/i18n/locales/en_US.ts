@@ -245,6 +245,7 @@ const translations: VariantResource = {
   FetchProvider_Fetch_CloudFlareChallenge: 'The request to "{0}" was rejected by CloudFlare Anti-Bot detection.\nMake sure to bypass CloudFlare before accessing the content of this website (e.g., with the HakuNeko Assistant browser extension).',
   FetchProvider_Fetch_VercelChallenge: 'The request to "{0}" was rejected by Vercel Attack Challenge Mode.\nMake sure to bypass Vercel before accessing the content of this website.',
   FetchProvider_Fetch_Forbidden: 'The access to "{0}" was denied.\nMake sure the website is available and accessible (e.g., VPN to bypass region lock, manual login via website link).',
+  FetchProvider_Fetch_TransientStatus: 'The request to "{0}" failed temporarily (HTTP status {1}).\nThe website may be overloaded or unavailable, try again later.',
   //
   BookmarkPlugin_ConvertToSerializedBookmark_UnsupportedFormatError: 'The provided data seems to be invalid/corrupted and could not be successfully de-serialized to a bookmark!',
   DownloadHistory_Import_UnsupportedFormatError: 'The selected file is not a HakuNeko download history export!',

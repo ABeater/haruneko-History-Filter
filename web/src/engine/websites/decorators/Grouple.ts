@@ -3,6 +3,7 @@ import { Fetch, FetchWindowScript } from '../../platform/FetchProvider';
 import { type MangaScraper, type MangaPlugin, type Chapter, Page } from '../../providers/MangaPlugin';
 import { type Priority } from '../../taskpool/DeferredTask';
 import * as Common from './Common';
+import { ThrowOnTransientStatus } from '../../TransientErrors';
 
 export type MirroredPage = Page<{
     mirrors: string[];
@@ -80,6 +81,7 @@ async function FetchImageWithMirrors(this: MangaScraper, page: MirroredPage, pri
             //if (signal.aborted) throw new DOMException(undefined, 'AbortError');
             try {
                 const response = await Fetch(new Request(uri, { signal: signal, headers: { Referer: page.Parameters.Referer } }));
+                ThrowOnTransientStatus(response);
                 const blob = await response.blob();
                 if (!blob.type.startsWith('image/')) throw new TypeError(blob.type);
                 return blob;

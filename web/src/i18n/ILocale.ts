@@ -340,6 +340,7 @@ export enum EngineResourceKey {
     FetchProvider_Fetch_CloudFlareChallenge = 'FetchProvider_Fetch_CloudFlareChallenge',
     FetchProvider_Fetch_VercelChallenge = 'FetchProvider_Fetch_VercelChallenge',
     FetchProvider_Fetch_Forbidden = 'FetchProvider_Fetch_Forbidden',
+    FetchProvider_Fetch_TransientStatus = 'FetchProvider_Fetch_TransientStatus',
 
     BookmarkPlugin_ConvertToSerializedBookmark_UnsupportedFormatError = 'BookmarkPlugin_ConvertToSerializedBookmark_UnsupportedFormatError',
 

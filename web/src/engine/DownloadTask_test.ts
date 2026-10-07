@@ -1,8 +1,11 @@
-import { vi, describe, it, expect } from 'vitest';
+import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { DownloadTask, Status } from './DownloadTask';
 import type { StoreableMediaContainer, MediaItem } from './providers/MediaPlugin';
 import type { StorageController } from './StorageController';
 import { DeferredTask } from './taskpool/DeferredTask';
+import { TransientStatusError } from './TransientErrors';
+import { Exception } from './Error';
+import { EngineResourceKey as R } from '../i18n/ILocale';
 
 function MockItem(resolve: boolean, delay: number = undefined) {
     const item = { Fetch: vi.fn() };
@@ -408,6 +411,178 @@ describe('DownloadTask', () => {
             }
             expect(fixture.ProgressChangedCallbackMock).toHaveBeenNthCalledWith(items.length + 1, -1.0, testee);
             expect(fixture.ProgressChangedCallbackMock).toHaveBeenNthCalledWith(items.length + 2, 1.0, testee);
+        });
+    });
+    describe('Retry', () => {
+
+        const success = Symbol('success');
+        const networkError = () => new TypeError('Failed to fetch');
+
+        /**
+         * Create an item whose fetch results in the given {@link results} (one per call: rejected with the error, or resolved for {@link success}).
+         */
+        function FlakyItem(...results: unknown[]) {
+            const item = { Fetch: vi.fn() };
+            for(const result of results) {
+                result === success ? item.Fetch.mockResolvedValueOnce(null) : item.Fetch.mockRejectedValueOnce(result);
+            }
+            return item as unknown as MediaItem & { Fetch: ReturnType<typeof vi.fn> };
+        }
+
+        async function RunToEnd(testee: DownloadTask): Promise<void> {
+            const promise = testee.Run();
+            await vi.runAllTimersAsync();
+            await promise;
+        }
+
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.spyOn(Math, 'random').mockReturnValue(0);
+            vi.spyOn(console, 'warn').mockImplementation(() => {});
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+            vi.restoreAllMocks();
+        });
+
+        it('Should retry a page after a temporary failure and complete', async () => {
+            const items = [ FlakyItem(networkError(), success), FlakyItem(success) ];
+            const fixture = new TestFixture().SetupMediaContainer(items);
+            fixture.MediaContainerMock.Store.mockResolvedValue(undefined);
+            const testee = fixture.CreateTestee();
+
+            await RunToEnd(testee);
+
+            expect(items[0].Fetch).toHaveBeenCalledTimes(2);
+            expect(items[1].Fetch).toHaveBeenCalledTimes(1);
+            expect(fixture.MediaContainerMock.Store).toHaveBeenCalledTimes(1);
+            expect(testee.Errors.Value).toEqual([]);
+            expect(testee.Status.Value).toBe(Status.Completed);
+        });
+
+        it('Should retry at most twice with increasing delays and then fail', async () => {
+            const error = new TransientStatusError('https://host/page.png', 503, 0);
+            const item = FlakyItem(error, error, error, success);
+            const fixture = new TestFixture().SetupMediaContainer([ item ]);
+            const testee = fixture.CreateTestee();
+
+            const promise = testee.Run();
+            await vi.advanceTimersByTimeAsync(1_999);
+            expect(item.Fetch).toHaveBeenCalledTimes(1);
+            await vi.advanceTimersByTimeAsync(1);
+            expect(item.Fetch).toHaveBeenCalledTimes(2);
+            await vi.advanceTimersByTimeAsync(5_999);
+            expect(item.Fetch).toHaveBeenCalledTimes(2);
+            await vi.advanceTimersByTimeAsync(1);
+            expect(item.Fetch).toHaveBeenCalledTimes(3);
+            await vi.runAllTimersAsync();
+            await promise;
+
+            expect(item.Fetch).toHaveBeenCalledTimes(3);
+            expect(fixture.MediaContainerMock.Store).not.toHaveBeenCalled();
+            expect(testee.Errors.Value).toEqual([ error ]);
+            expect(testee.Status.Value).toBe(Status.Failed);
+        });
+
+        it('Should not retry permanent or unknown failures', async () => {
+            const items = [
+                FlakyItem(new Exception(R.FetchProvider_Fetch_Forbidden, 'https://host'), success),
+                FlakyItem(new TypeError('text/html'), success),
+                FlakyItem(new DOMException('', 'AbortError'), success),
+                FlakyItem('x', success),
+            ];
+            const fixture = new TestFixture().SetupMediaContainer(items);
+            const testee = fixture.CreateTestee();
+
+            await RunToEnd(testee);
+
+            for(const item of items) {
+                expect(item.Fetch).toHaveBeenCalledTimes(1);
+            }
+            expect(testee.Errors.Value.length).toBe(4);
+            expect(testee.Status.Value).toBe(Status.Failed);
+            expect(console.warn).not.toHaveBeenCalled();
+        });
+
+        it('Should wait as long as requested by the website', async () => {
+            const item = FlakyItem(new TransientStatusError('https://host/page.png', 429, 10_000), success);
+            const fixture = new TestFixture().SetupMediaContainer([ item ]);
+            fixture.MediaContainerMock.Store.mockResolvedValue(undefined);
+            const testee = fixture.CreateTestee();
+
+            const promise = testee.Run();
+            await vi.advanceTimersByTimeAsync(9_999);
+            expect(item.Fetch).toHaveBeenCalledTimes(1);
+            await vi.runAllTimersAsync();
+            await promise;
+
+            expect(item.Fetch).toHaveBeenCalledTimes(2);
+            expect(testee.Status.Value).toBe(Status.Completed);
+        });
+
+        it('Should not retry when the website asks to wait too long', async () => {
+            const item = FlakyItem(new TransientStatusError('https://host/page.png', 429, 60_000), success);
+            const fixture = new TestFixture().SetupMediaContainer([ item ]);
+            const testee = fixture.CreateTestee();
+
+            await RunToEnd(testee);
+
+            expect(item.Fetch).toHaveBeenCalledTimes(1);
+            expect(testee.Status.Value).toBe(Status.Failed);
+        });
+
+        it('Should not retry when another page already failed permanently', async () => {
+            const items = [ FlakyItem(networkError(), success), FlakyItem('x') ];
+            const fixture = new TestFixture().SetupMediaContainer(items);
+            const testee = fixture.CreateTestee();
+
+            await RunToEnd(testee);
+
+            expect(items[0].Fetch).toHaveBeenCalledTimes(1);
+            expect(items[1].Fetch).toHaveBeenCalledTimes(1);
+            expect(testee.Status.Value).toBe(Status.Failed);
+        });
+
+        it('Should stop waiting for a retry when aborted', async () => {
+            const item = FlakyItem(networkError(), success);
+            const fixture = new TestFixture().SetupMediaContainer([ item ]);
+            const testee = fixture.CreateTestee();
+
+            const promise = testee.Run();
+            await vi.advanceTimersByTimeAsync(500);
+            testee.Abort();
+            await promise;
+
+            expect(item.Fetch).toHaveBeenCalledTimes(1);
+            expect(testee.Status.Value).toBe(Status.Failed);
+        });
+
+        it('Should retry getting the pages of the chapter after a temporary failure', async () => {
+            const fixture = new TestFixture().SetupMediaContainer([ FlakyItem(success) ]);
+            fixture.MediaContainerMock.Update.mockRejectedValueOnce(networkError()).mockResolvedValue(undefined);
+            fixture.MediaContainerMock.Store.mockResolvedValue(undefined);
+            const testee = fixture.CreateTestee();
+
+            await RunToEnd(testee);
+
+            expect(fixture.MediaContainerMock.Update).toHaveBeenCalledTimes(2);
+            expect(testee.Status.Value).toBe(Status.Completed);
+        });
+
+        it('Should be able to retry a failed task manually', async () => {
+            const item = FlakyItem('x', success);
+            const fixture = new TestFixture().SetupMediaContainer([ item ]);
+            fixture.MediaContainerMock.Store.mockResolvedValue(undefined);
+            const testee = fixture.CreateTestee();
+
+            await RunToEnd(testee);
+            expect(testee.Status.Value).toBe(Status.Failed);
+            await RunToEnd(testee);
+
+            expect(item.Fetch).toHaveBeenCalledTimes(2);
+            expect(testee.Errors.Value).toEqual([]);
+            expect(testee.Status.Value).toBe(Status.Completed);
         });
     });
 });
