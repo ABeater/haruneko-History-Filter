@@ -72,17 +72,25 @@ export default class extends DecoratableMangaScraper {
     public override async FetchChapters(manga: Manga): Promise<Chapter[]> {
         const [ { chapters }, scanlators ] = await Promise.all([
             FetchJSON<APIManga>(new Request(new URL(`./manga/info?mangaId=${manga.Identifier}`, this.apiURL))),
-            // NOTE: The names of the groups are optional, the chapters must not fail without them
-            FetchJSON<APIMangaPage>(new Request(new URL(`./manga/page?id=${manga.Identifier}`, this.apiURL))).then(({ mangaPage }) => mangaPage.scanlators ?? []).catch((): APIMangaPage['mangaPage']['scanlators'] => []),
+            FetchJSON<APIMangaPage>(new Request(new URL(`./manga/page?id=${manga.Identifier}`, this.apiURL)))
+                .then(({ mangaPage }) => ({ names: mangaPage.scanlators ?? [], error: null }))
+                .catch((error: unknown) => ({ names: [] as APIMangaPage['mangaPage']['scanlators'], error })),
         ]);
-        const groups = new Map<string, string>(scanlators.map(({ id, name }) => [ id, name ]));
+        const groups = new Map<string, string>(scanlators.names.map(({ id, name }) => [ id, name ]));
         // Releases of different groups usually have the same title, so the group is added to keep them distinct (e.g., for the file name)
         const hasMultipleGroups = new Set(chapters.map(({ scanId }) => scanId)).size > 1;
+        // NOTE: The title determines the file name of a download and the viewed flags, so it must not depend on whether the names could be loaded.
+        //       The names are only optional for a manga with a single group (its titles never contain the group).
+        if(hasMultipleGroups && scanlators.error) {
+            throw scanlators.error;
+        }
         return chapters
             .sort((self, other) => other.index - self.index)
             .map(({ id, title, scanId }) => {
                 const group = groups.get(scanId);
-                return new Chapter(this, manga, id, hasMultipleGroups && group ? `${title} [${group}]` : title).WithGroups(group);
+                // A group without a name (e.g., removed from the website) falls back to its identifier, which is stable as well
+                const label = group ?? scanId;
+                return new Chapter(this, manga, id, hasMultipleGroups && label ? `${title} [${label}]` : title).WithGroups(group);
             });
     }
 
